@@ -1,0 +1,72 @@
+# Clojure (deps.edn)
+.cpcache/
+.nrepl-port
+.clj-kondo/.cache/
+.lsp/.cache/
+.calva/output-window/
+.repl-history
+.clj-kondo/
+*.class
+
+# IDE and Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+*.iml
+*.iws
+*.ipr
+.settings/
+.project
+.classpath
+
+# PHP
+/vendor/
+composer.phar
+composer.lock
+.phpunit.result.cache
+*.php~
+
+# Logs and databases
+*.log
+*.sqlite
+*.db
+
+# Python (since your project includes Streamlit)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.python-version
+venv/
+ENV/
+
+# Node (in case of any JavaScript dependencies)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Repo specific files
+deploy/pulsar/data/
+deploy/temporal/
+logs/
+rr

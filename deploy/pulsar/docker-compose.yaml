@@ -1,0 +1,147 @@
+version: '3'
+networks:
+  pulsar:
+    driver: bridge
+services:
+  zookeeper:
+    image: zookeeper:3.8
+    container_name: zookeeper
+    restart: on-failure
+    networks:
+      - pulsar
+    environment:
+      ZOO_PORT: 2181
+      ZOO_4LW_COMMANDS_WHITELIST: ruok
+    ports:
+      - "2181:2181"
+    volumes:
+      - zookeeper-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok | nc 127.0.0.1 2181 | grep imok || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  pulsar-init:
+    container_name: pulsar-init
+    hostname: pulsar-init
+    image: apachepulsar/pulsar:latest
+    networks:
+      - pulsar
+    command:
+      - bin/pulsar
+      - initialize-cluster-metadata
+      - --cluster
+      - cluster-a
+      - --zookeeper
+      - zookeeper:2181
+      - --configuration-store
+      - zookeeper:2181
+      - --web-service-url
+      - http://broker:8080
+      - --broker-service-url
+      - pulsar://broker:6650
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+
+  bookie:
+    image: apachepulsar/pulsar:latest
+    container_name: bookie
+    restart: on-failure
+    networks:
+      - pulsar
+    environment:
+      - clusterName=cluster-a
+      - zkServers=zookeeper:2181
+      - metadataServiceUri=metadata-store:zk:zookeeper:2181
+      - advertisedAddress=bookie
+      - BOOKIE_MEM=-Xms512m -Xmx512m -XX:MaxDirectMemorySize=256m
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+      pulsar-init:
+        condition: service_completed_successfully
+    volumes:
+      - ./data/bookkeeper:/pulsar/data/bookkeeper
+    command: bash -c "bin/apply-config-from-env.py conf/bookkeeper.conf && exec bin/pulsar bookie"
+
+  broker:
+    image: apachepulsar/pulsar:latest
+    container_name: broker
+    hostname: broker
+    restart: on-failure
+    networks:
+      - pulsar
+    environment:
+      - metadataStoreUrl=zk:zookeeper:2181
+      - zookeeperServers=zookeeper:2181
+      - clusterName=cluster-a
+      - managedLedgerDefaultEnsembleSize=1
+      - managedLedgerDefaultWriteQuorum=1
+      - managedLedgerDefaultAckQuorum=1
+      - advertisedAddress=broker
+      - advertisedListeners=external:pulsar://127.0.0.1:6650
+      - PULSAR_MEM=-Xms512m -Xmx512m -XX:MaxDirectMemorySize=256m
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+      bookie:
+        condition: service_started
+    ports:
+      - "6650:6650"
+      - "8080:8080"
+    command: bash -c "bin/apply-config-from-env.py conf/broker.conf && exec bin/pulsar broker"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/admin/v2/brokers/cluster-a"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # mysql:
+  #   image: mysql:latest
+  #   container_name: mysql
+  #   restart: always
+  #   networks:
+  #     - pulsar
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: root
+  #     MYSQL_DATABASE: pulsar_manager
+  #     MYSQL_USER: pulsar
+  #     MYSQL_PASSWORD: pulsar
+  #   ports:
+  #     - "3306:3306"
+  #   volumes:
+  #     - mysql-data:/var/lib/mysql
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 3
+
+  # pulsar-manager:
+  #   image: apachepulsar/pulsar-manager
+  #   container_name: pulsar-manager
+  #   networks:
+  #     - pulsar
+  #   environment:
+  #     SPRING_CONFIGURATION_FILE: "classpath:/application.properties,classpath:/application-mysql.properties"
+  #     SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/pulsar_manager?useSSL=false"
+  #     SPRING_DATASOURCE_USERNAME: "pulsar"
+  #     SPRING_DATASOURCE_PASSWORD: "pulsar"
+  #     JAVA_OPTS: "-DpulsarManager.standalone=true"
+  #     PULSAR_WEB_SERVICE_URL: "http://broker:8080"
+  #     PULSAR_ADMIN_SERVICE_URL: "http://broker:8080"
+  #     SERVER_SERVLET_CONTEXT_PATH: /
+  #   depends_on:
+  #     mysql:
+  #       condition: service_healthy
+  #     broker:
+  #       condition: service_healthy
+  #   ports:
+  #     - "7750:9527"
+  #     - "9527:9527"  # Add this line to expose port 9527 directly
+
+volumes:
+  zookeeper-data:
+  # mysql-data:

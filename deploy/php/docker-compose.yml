@@ -1,0 +1,9 @@
+version: '3.8'
+services:
+  php:
+    image: php:8.2-cli
+    ports:
+      - "8082:80"
+    volumes:
+      - /Users/rwood/dev/poc/temporal/src/:/usr/src/myapp
+    working_dir: /usr/src/myapp

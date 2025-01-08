@@ -1,0 +1,18 @@
+version: '3'
+rpc:
+  listen: tcp://127.0.0.1:6001
+
+server:
+  command: "php ../../src/Workers/PayrollActivityWorker1.php"
+  relay: "pipes"
+
+logs:
+  mode: development
+  channels:
+    temporal:
+      level: debug
+      encoding: console
+
+temporal:
+  address: "temporal:7233"  # Adjust this if your Temporal server address is different
+  namespace: "default"
