@@ -59,10 +59,10 @@ echo "Starting Event Publisher..."
 clj -m com.bamboohr.event-publisher $NUM_EVENT_MESSAGES_TO_PUBLISH &
 
 echo "Starting Load Document Workflow..."
-gtimeout $RUN_TIME_S docker compose -f deploy/temporal/docker-compose/docker-compose.yml exec -T php-worker php start_workflows.php document $NUM_LOAD_DOCUMENT_WORKFLOWS &
+gtimeout $RUN_TIME_S docker compose -f deploy/temporal/docker-compose/docker-compose.yml exec -T php-worker php src/start_workflows.php document $NUM_LOAD_DOCUMENT_WORKFLOWS &
 
 echo "Starting Payroll Workflow..."
-gtimeout $RUN_TIME_S docker compose -f deploy/temporal/docker-compose/docker-compose.yml exec -T php-worker php start_workflows.php payroll $NUM_PAYROLL_WORKFLOWS &
+gtimeout $RUN_TIME_S docker compose -f deploy/temporal/docker-compose/docker-compose.yml exec -T php-worker php src/start_workflows.php payroll $NUM_PAYROLL_WORKFLOWS &
 
 # Simulate scaling up of workers
 echo "Scaling up workers on time delay..."
